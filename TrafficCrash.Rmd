@@ -76,14 +76,91 @@ str(traffic_df)
 ---
 
 ## 6. DATA CLEANING (Sundeep / Yao Hong)
-  
+# Load the required libraries
+library(dplyr)
+# retrieve data
+data <- read.csv("C:/Users/Administrator/Documents/GitHub/TrafficCrashesProject/Crash_Analysis_System_(CAS)_data.csv")
+
+# Handle missing values: fill in missing values instead of deleting them
+# For numeric data, use median padding
+# For categorical data, use the most common category padding
+
+for(col in names(data)){
+  if(is.numeric(data[[col]])){
+    data[[col]][is.na(data[[col]])] <- median(data[[col]], na.rm = TRUE)
+  } else if(is.factor(data[[col]]) || is.character(data[[col]])){
+    levels <- unique(data[[col]][!is.na(data[[col]])])
+    data[[col]][is.na(data[[col]])] <- levels[which.max(tabulate(match(data[[col]], levels)))]
+  }
+}
+# Handling outliers: using the box plot rule for numeric columns
+data <- data %>%
+  mutate(across(where(is.numeric), ~replace(.x, .x < (quantile(.x, .25, na.rm = TRUE) - 1.5 * IQR(.x, na.rm = TRUE)) | .x > (quantile(.x, .75, na.rm = TRUE) + 1.5 * IQR(.x, na.rm = TRUE)), NA)))
+
+
+# Can choose how to handle these outliers, e.g. replace median with
+data <- data %>%
+  mutate(across(where(is.numeric), ~replace(.x, is.na(.x), median(.x, na.rm = TRUE))))
+
+# Remove duplicate records
+data <- distinct(data)
+
+# Export cleaned data
+write.csv(data, "C:/Users/Administrator/Documents/GitHub/TrafficCrashesProject/1/CAS_data_cleaned.csv", row.names = FALSE)
+
 
 ---
 
 ## 7. EXPLORATORY DATA ANALYSIS  (Sundeep / Yao Hong)
-  
+
+library(ggplot2)
+library(dplyr)
+
+data <- read.csv("C:/Users/Administrator/Documents/GitHub/TrafficCrashesProject/1/CAS_data_cleaned.csv")
+
+# 1. Overview of data
+str(data)
+
+# 2. Summary of data
+summary(data)
+
+## 3. missing value checks
+cat("缺失值总数:", sum(is.na(data)), "\n")
+
+# 4. Univariate Analysis - Plotting Histograms
+# Take 'areaUnitID' as an example, you can replace it with any numeric column
+hist(data$areaUnitID, main="直方图 - areaUnitID", xlab="areaUnitID")
+
+# Univariate analysis - plotting box plots
+# Take 'areaUnitID' as an example
+
+boxplot(data$areaUnitID, main="盒形图 - areaUnitID", ylab="areaUnitID")
+
+# 5. Multivariate analysis
+# Plotting a scatterplot of X and Y
+plot(data$X, data$Y, main="散点图 - X vs Y", xlab="X", ylab="Y")
+
+# Correlation matrix (only numerical columns are considered)
+numeric_data <- data[, sapply(data, is.numeric)]
+cor_matrix <- cor(numeric_data, use="complete.obs")
+print(cor_matrix)
+
+
+# 6. Subgroup analysis
+# calculating the mean of 'areaUnitID' based on the 'urban' classification
+group_means <- tapply(data$areaUnitID, data$urban, mean)
+print(group_means)
+
+# 7. Visualisation (using ggplot2)
+# create a bar chart based on 'crashSeverity' and 'areaUnitID'
+ggplot(data, aes(x=crashSeverity, y=areaUnitID)) + geom_bar(stat="identity") + 
+  ggtitle("条形图 - crashSeverity vs areaUnitID") + xlab("crashSeverity") + ylab("areaUnitID")
+
 
 ---
+
+
+
 
 ## 7. DATA METHODOLOGY  (Wei Ven / Ain)
   
